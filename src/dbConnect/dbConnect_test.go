@@ -1,4 +1,4 @@
-package DBConnect
+package dbConnect
 
 import (
 	"testing"
@@ -16,7 +16,7 @@ func TestInsertLookUpEntry(t *testing.T) {
 	err1 := InsertLookUpEntry(&c, db)
 
 	var entry LookUpDocument
-	err := db.DB(dbName).C(collectionName).Find(bson.M{"ShortURLEndPoint": c.ShortURLEndPoint}).One(&entry)
+	err := db.DB(DbName).C(CollectionName).Find(bson.M{"ShortURLEndPoint": c.ShortURLEndPoint}).One(&entry)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -24,7 +24,7 @@ func TestInsertLookUpEntry(t *testing.T) {
 	if c.FullURL != entry.FullURL || c.ShortURLEndPoint != entry.ShortURLEndPoint {
 		t.Errorf("Inserted: %v, got: %v, want: %v.\n %v", c, entry, c, err1)
 	}
-	err = db.DB(dbName).C(collectionName).Remove(bson.M{"ShortURLEndPoint": c.ShortURLEndPoint})
+	err = db.DB(DbName).C(CollectionName).Remove(bson.M{"ShortURLEndPoint": c.ShortURLEndPoint})
 	if err != nil {
 		fmt.Println("CleanUp Failed", err)
 	}
@@ -43,7 +43,7 @@ func TestGetLookUpEntry(t *testing.T) {
 	if c.FullURL != d.FullURL || c.ShortURLEndPoint != d.ShortURLEndPoint {
 		t.Errorf("Inserted: %v, got: %v, want: %v.\n %v", c, d, c, err)
 	}
-	err = db.DB(dbName).C(collectionName).Remove(bson.M{"ShortURLEndPoint": c.ShortURLEndPoint})
+	err = db.DB(DbName).C(CollectionName).Remove(bson.M{"ShortURLEndPoint": c.ShortURLEndPoint})
 	if err != nil {
 		fmt.Println("CleanUp Failed", err)
 	}

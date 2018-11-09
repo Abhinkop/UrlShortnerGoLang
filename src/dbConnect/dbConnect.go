@@ -1,4 +1,4 @@
-package DBConnect
+package dbConnect
 
 import (
 	"gopkg.in/mgo.v2/bson"
@@ -8,8 +8,8 @@ import (
 	"log"
 )
 
-const dbName string = "URLShortner"
-const collectionName string = "LookUp"
+const DbName string = "URLShortner"
+const CollectionName string = "LookUp"
 
 type LookUpDocument struct {
 	FullURL          string `json:"FullURL" bson:"FullURL"`
@@ -31,7 +31,7 @@ func Disconnect(db *mgo.Session) {
 }
 
 func InsertLookUpEntry(entry *LookUpDocument, db *mgo.Session) error {
-	err := db.DB(dbName).C(collectionName).Insert(entry)
+	err := db.DB(DbName).C(CollectionName).Insert(entry)
 	if err != nil {
 		log.Println("cannot insert into  Collection", err)
 	}
@@ -40,7 +40,7 @@ func InsertLookUpEntry(entry *LookUpDocument, db *mgo.Session) error {
 
 func GetLookUpEntry(shortURL string, db *mgo.Session) (LookUpDocument, error) {
 	var entry LookUpDocument
-	err := db.DB(dbName).C(collectionName).Find(bson.M{"ShortURLEndPoint": shortURL}).One(&entry)
+	err := db.DB(DbName).C(CollectionName).Find(bson.M{"ShortURLEndPoint": shortURL}).One(&entry)
 	if err != nil {
 		log.Println(err)
 	}

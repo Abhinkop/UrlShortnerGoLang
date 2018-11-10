@@ -58,3 +58,31 @@ func TestWrongGetLookUpEntry(t *testing.T) {
 	}
 	Disconnect(db)
 }
+
+func TestIsShortURLAlreadyPresent(t *testing.T) {
+	db := Connect("localhost")
+	var c LookUpDocument
+	c.FullURL = "https:/www.github.com"
+	c.ShortURLEndPoint = "/gh"
+	err := InsertLookUpEntry(&c, db)
+	res := IsShortURLAlreadyPresent("/gh", db)
+	if res != true {
+		t.Errorf("IsShortURLAlreadyPresent returned false expecting true")
+	}
+
+	err = db.DB(DbName).C(CollectionName).Remove(bson.M{"ShortURLEndPoint": c.ShortURLEndPoint})
+	if err != nil {
+		fmt.Println("CleanUp Failed", err)
+	}
+
+	Disconnect(db)
+}
+
+func TestIsShortURLUnique(t *testing.T) {
+	db := Connect("localhost")
+	res := IsShortURLAlreadyPresent("/hgfkjdh", db)
+	if res != false {
+		t.Errorf("IsShortURLAlreadyPresent retuned false expected true")
+	}
+	Disconnect(db)
+}

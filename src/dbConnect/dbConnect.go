@@ -46,3 +46,11 @@ func GetLookUpEntry(shortURL string, db *mgo.Session) (LookUpDocument, error) {
 	}
 	return entry, err
 }
+
+func IsShortURLAlreadyPresent(shortURL string, db *mgo.Session) bool {
+	shortURLCount, err := db.DB(DbName).C(CollectionName).Find(bson.M{"ShortURLEndPoint": shortURL}).Count()
+	if err != nil {
+		log.Println(err)
+	}
+	return shortURLCount != 0
+}

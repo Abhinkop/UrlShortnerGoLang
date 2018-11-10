@@ -26,17 +26,25 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	session := dbConnect.Connect("localhost")
-	entry, _ := dbConnect.GetLookUpEntry("/fb", session)
-	var entry1 dbConnect.LookUpDocument
-	entry1.FullURL = r.FormValue("URL")
-	entry1.ShortURLEndPoint = "/" + randomStringGen.Genarate(6)
-	err := dbConnect.InsertLookUpEntry(&entry1, session)
+	var entry dbConnect.LookUpDocument
+	entry.FullURL = r.FormValue("URL")
+	entry.ShortURLEndPoint = randomStringGen.Genarate(6, session)
+	err := dbConnect.InsertLookUpEntry(&entry, session)
+	dbConnect.Disconnect(session)
 	if err != nil {
 		fmt.Fprintln(w, err)
 	}
-	fmt.Fprintln(w, entry.FullURL)
-	fmt.Fprintln(w, randomStringGen.Genarate(6))
-	fmt.Fprintln(w, r.FormValue("URL"))
+	template, er := template.ParseFiles("./inserted.html")
+	if er != nil {
+		fmt.Println(er)
+		os.Exit(-1)
+	}
+	entry.ShortURLEndPoint = r.Host + entry.ShortURLEndPoint
+	err = template.Execute(w, entry)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
 }
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "../images/favicon.ico")
@@ -53,16 +61,15 @@ func main() {
 }
 
 func NewHttpRedirectHandler(fallback http.Handler) http.HandlerFunc {
-	var xxxx = make(map[string]string)
-	xxxx["/fb"] = "https://facebook.com"
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.URL.Path)
-		url1, ok := xxxx[r.URL.Path]
-		if ok != true {
+		session := dbConnect.Connect("localhost")
+		entry, err := dbConnect.GetLookUpEntry(r.URL.Path, session)
+		dbConnect.Disconnect(session)
+		if err != nil {
 			fallback.ServeHTTP(w, r)
 		} else {
-			http.Redirect(w, r, url1, http.StatusMovedPermanently)
+			http.Redirect(w, r, entry.FullURL, http.StatusMovedPermanently)
 		}
 
 	}

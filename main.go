@@ -12,7 +12,7 @@ import (
 var Host = "localhost:8080"
 
 func redirect(w http.ResponseWriter, r *http.Request) {
-	template, err := template.ParseFiles("./endPointNotFound.html")
+	template, err := template.ParseFiles("./htmlTemplates/endPointNotFound.html")
 	if err != nil {
 		displayError(&w, err)
 		return
@@ -25,7 +25,7 @@ func redirect(w http.ResponseWriter, r *http.Request) {
 }
 
 func displayError(w *http.ResponseWriter, e error) {
-	template, err := template.ParseFiles("./error.html")
+	template, err := template.ParseFiles("./htmlTemplates/error.html")
 	err = template.Execute(*w, e)
 	if err != nil {
 		fmt.Println(err)
@@ -34,7 +34,7 @@ func displayError(w *http.ResponseWriter, e error) {
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	template, err := template.ParseFiles("./index.html")
+	template, err := template.ParseFiles("./htmlTemplates/index.html")
 	if err != nil {
 		displayError(&w, err)
 		return
@@ -63,7 +63,7 @@ func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 		displayError(&w, err)
 		return
 	}
-	template, er := template.ParseFiles("./inserted.html")
+	template, er := template.ParseFiles("./htmlTemplates/inserted.html")
 	if er != nil {
 		displayError(&w, er)
 		return
@@ -76,7 +76,7 @@ func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "../../images/favicon.ico")
+	http.ServeFile(w, r, "./images/favicon.ico")
 }
 
 func main() {

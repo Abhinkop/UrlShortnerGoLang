@@ -8,6 +8,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// Test for dbConnect package.
 func TestInsertLookUpEntry(t *testing.T) {
 	db := Connect("localhost")
 	var c LookUpDocument

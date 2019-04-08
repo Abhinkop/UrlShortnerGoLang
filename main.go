@@ -1,18 +1,42 @@
 package main
 
 import (
-	"dbConnect"
+	"encoding/json"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
-	"os"
-	"randomStringGen"
+
+	"UrlShortnerGoLang/internal_pkg/dbconnect"
+	"UrlShortnerGoLang/internal_pkg/randomstringgen"
+
+	"github.com/gorilla/mux"
 )
 
-var Host = "localhost:8080"
+var mongoAddr = "mongodb://root:123@172.17.0.2"
 
-func redirect(w http.ResponseWriter, r *http.Request) {
-	template, err := template.ParseFiles("./htmlTemplates/endPointNotFound.html")
+func main() {
+	var router = mux.NewRouter()
+	router.HandleFunc("/api/shortenURL", shortenURLapi).Methods("GET")
+	router.HandleFunc("/images/favicon.ico", faviconHandler)
+	router.HandleFunc("/shortenURL", shortenURLHandler)
+
+	//We first check for a endpoint and redirect it if it is present.
+	router.HandleFunc("/{shortURL}", shortURLHandler)
+
+	// Handle index Page
+	router.HandleFunc("/", indexHandler)
+
+	fmt.Println("Running server!")
+	log.Fatal(http.ListenAndServe(":3000", router))
+}
+
+func faviconHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./resources/images/favicon.ico")
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	template, err := template.ParseFiles("./resources/HTML/index.html")
 	if err != nil {
 		displayError(&w, err)
 		return
@@ -25,104 +49,85 @@ func redirect(w http.ResponseWriter, r *http.Request) {
 }
 
 func displayError(w *http.ResponseWriter, e error) {
-	template, err := template.ParseFiles("./htmlTemplates/error.html")
+	template, err := template.ParseFiles("./resources/HTML/error.html")
 	err = template.Execute(*w, e)
+	log.Println("Error" + e.Error())
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(-1)
-	}
-}
-
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	template, err := template.ParseFiles("./htmlTemplates/index.html")
-	if err != nil {
-		displayError(&w, err)
-		return
-	}
-	err = template.Execute(w, nil)
-	if err != nil {
-		displayError(&w, err)
-		return
+		log.Fatal(err)
 	}
 }
 
 func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
-	session := dbConnect.Connect("localhost")
+	session := dbconnect.Connect(mongoAddr)
+	defer dbconnect.Disconnect(session)
 	// Create a entry to insert to db
-	var entry dbConnect.LookUpDocument
+	var entry dbconnect.LookUpDocument
 	entry.FullURL = r.FormValue("URL")
-	entry.ShortURLEndPoint = randomStringGen.Genarate(6, session)
-	err := dbConnect.InsertLookUpEntry(&entry, session)
+	entry.ShortURLEndPoint = randomstringgen.Genarate(6, session)
+	err := dbconnect.InsertLookUpEntry(&entry, session)
 	if err != nil {
 		displayError(&w, err)
 		return
 	}
-	dbConnect.Disconnect(session)
 
 	if err != nil {
 		displayError(&w, err)
 		return
 	}
-	template, er := template.ParseFiles("./htmlTemplates/inserted.html")
+	template, er := template.ParseFiles("./resources/HTML/inserted.html")
 	if er != nil {
 		displayError(&w, er)
 		return
 	}
-	entry.ShortURLEndPoint = r.Host + entry.ShortURLEndPoint
+	entry.ShortURLEndPoint = r.Host + "/" + entry.ShortURLEndPoint
 	err = template.Execute(w, entry)
 	if err != nil {
 		displayError(&w, err)
 		return
 	}
 }
-func faviconHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./images/favicon.ico")
-}
 
-func main() {
-	fmt.Println("Starting the server on ", Host)
-	mux := http.NewServeMux()
-	httpHandler := NewHttpRedirectHandler(mux)
-	http.ListenAndServe(":8080", httpHandler)
-}
-
-func NewHttpRedirectHandler(fallback http.Handler) http.HandlerFunc {
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/":
-			// server root path
-			{
-				indexHandler(w, r)
-				return
-			}
-		case "/shortenURL":
-			// serve shorten URL API
-			{
-				shortenURLHandler(w, r)
-				return
-			}
-		case "/images/favicon.ico":
-			// Server favicon
-			{
-				faviconHandler(w, r)
-				return
-			}
-		default:
-			{
-				session := dbConnect.Connect("localhost")
-				entry, err := dbConnect.GetLookUpEntry(r.URL.Path, session)
-				dbConnect.Disconnect(session)
-				// serve endpoint not found
-				if err != nil && err.Error() == "not found" {
-					redirect(w, r)
-					return
-				} else {
-					http.Redirect(w, r, entry.FullURL, http.StatusMovedPermanently)
-				}
-
-			}
-
+func shortURLHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	session := dbconnect.Connect(mongoAddr)
+	entry, err := dbconnect.GetLookUpEntry(vars["shortURL"], session)
+	dbconnect.Disconnect(session)
+	// serve endpoint not found
+	if err != nil && err.Error() == "not found" {
+		template, err := template.ParseFiles("./resources/HTML/endPointNotFound.html")
+		if err != nil {
+			displayError(&w, err)
+			return
 		}
+		err = template.Execute(w, nil)
+		if err != nil {
+			displayError(&w, err)
+			return
+		}
+
+		return
+	}
+	http.Redirect(w, r, entry.FullURL, http.StatusMovedPermanently)
+
+}
+
+func shortenURLapi(w http.ResponseWriter, r *http.Request) {
+	session := dbconnect.Connect(mongoAddr)
+	defer dbconnect.Disconnect(session)
+	defer handleErrorAPI(&w)
+	var entry dbconnect.LookUpDocument
+	entry.FullURL = r.FormValue("URL")
+	entry.ShortURLEndPoint = randomstringgen.Genarate(6, session)
+	err := dbconnect.InsertLookUpEntry(&entry, session)
+	if err != nil {
+		panic(err)
+	}
+	entry.ShortURLEndPoint = r.Host + "/" + entry.ShortURLEndPoint
+	json.NewEncoder(w).Encode(entry)
+}
+
+func handleErrorAPI(w *http.ResponseWriter) {
+	if err := recover(); err != nil {
+		http.Error(*w, "ERROR", http.StatusInternalServerError)
 	}
 }

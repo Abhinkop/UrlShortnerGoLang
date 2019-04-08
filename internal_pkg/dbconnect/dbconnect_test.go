@@ -1,4 +1,4 @@
-package dbConnect
+package dbconnect
 
 import (
 	"testing"
@@ -9,8 +9,11 @@ import (
 )
 
 // Test for dbConnect package.
+
+var mongoAddr = "mongodb://root:123@172.17.0.2"
+
 func TestInsertLookUpEntry(t *testing.T) {
-	db := Connect("localhost")
+	db := Connect(mongoAddr)
 	var c LookUpDocument
 	c.FullURL = "https:/www.github.com"
 	c.ShortURLEndPoint = "/gh"
@@ -33,7 +36,7 @@ func TestInsertLookUpEntry(t *testing.T) {
 }
 
 func TestGetLookUpEntry(t *testing.T) {
-	db := Connect("localhost")
+	db := Connect(mongoAddr)
 	var c LookUpDocument
 	c.FullURL = "https:/www.github.com"
 	c.ShortURLEndPoint = "/gh"
@@ -52,7 +55,7 @@ func TestGetLookUpEntry(t *testing.T) {
 }
 
 func TestWrongGetLookUpEntry(t *testing.T) {
-	db := Connect("localhost")
+	db := Connect(mongoAddr)
 	_, err := GetLookUpEntry("/gh", db)
 	if err.Error() != "not found" {
 		t.Errorf(err.Error())
@@ -61,7 +64,7 @@ func TestWrongGetLookUpEntry(t *testing.T) {
 }
 
 func TestIsShortURLAlreadyPresent(t *testing.T) {
-	db := Connect("localhost")
+	db := Connect(mongoAddr)
 	var c LookUpDocument
 	c.FullURL = "https:/www.github.com"
 	c.ShortURLEndPoint = "/gh"
@@ -80,7 +83,7 @@ func TestIsShortURLAlreadyPresent(t *testing.T) {
 }
 
 func TestIsShortURLUnique(t *testing.T) {
-	db := Connect("localhost")
+	db := Connect(mongoAddr)
 	res := IsShortURLAlreadyPresent("/hgfkjdh", db)
 	if res != false {
 		t.Errorf("IsShortURLAlreadyPresent retuned false expected true")

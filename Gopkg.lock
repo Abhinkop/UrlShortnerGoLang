@@ -2,20 +2,34 @@
 
 
 [[projects]]
+  digest = "1:65c7ed49d9f36dd4752e43013323fa9229db60b29aa4f5a75aaecda3130c74e2"
   name = "github.com/gorilla/mux"
   packages = ["."]
+  pruneopts = ""
   revision = "c5c6c98bc25355028a63748a498942a6398ccd22"
   version = "v1.7.1"
 
 [[projects]]
   branch = "v2"
+  digest = "1:f54ba71a035aac92ced3e902d2bff3734a15d1891daff73ec0f90ef236750139"
   name = "gopkg.in/mgo.v2"
-  packages = [".","bson","internal/json","internal/sasl","internal/scram"]
+  packages = [
+    ".",
+    "bson",
+    "internal/json",
+    "internal/sasl",
+    "internal/scram",
+  ]
+  pruneopts = ""
   revision = "9856a29383ce1c59f308dd1cf0363a79b5bef6b5"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5755f4e11b9773ff34ba6b37912234042abdb7f6963b851c0beade968b2417ec"
+  input-imports = [
+    "github.com/gorilla/mux",
+    "gopkg.in/mgo.v2",
+    "gopkg.in/mgo.v2/bson",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

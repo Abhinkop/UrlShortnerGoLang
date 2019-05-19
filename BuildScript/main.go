@@ -62,7 +62,7 @@ func main() {
 	log.Println("Start: fetching dependecies (dep ensure)")
 	cmd = exec.Command("dep", "ensure")
 	out, err := cmd.CombinedOutput()
-	log.Println("cmd Output :",out)
+	log.Println("cmd Output :", out)
 	printError("`dep ensure` failed with :", err)
 	log.Println("End: fetching dependencies (dep ensur)e")
 
@@ -70,7 +70,7 @@ func main() {
 	log.Println("Start: go build main.go")
 	cmd = exec.Command("go", "build", "main.go")
 	out, err = cmd.CombinedOutput()
-	log.Println("cmd Output :",out)
+	log.Println("cmd Output :", out)
 	printError("`go build maing.go` failed with :", err)
 	log.Println("End: go build main.go")
 
@@ -81,12 +81,16 @@ func main() {
 	printError("Error creating Directory :"+buildOutput, err)
 	cmd = exec.Command("cp", "-r", "resources", buildOutput)
 	out, err = cmd.CombinedOutput()
-	log.Println("cmd Output :",out)
+	log.Println("cmd Output :", out)
 	printError("copying `resources` folder failed with :", err)
+	cmd = exec.Command("cp", "-r", "Config", buildOutput)
+	out, err = cmd.CombinedOutput()
+	log.Println("cmd Output :", out)
+	printError("copying `Config` folder failed with :", err)
 	log.Println("Start: copy `main` to `build_output")
 	cmd = exec.Command("cp", "-r", "main", buildOutput)
 	out, err = cmd.CombinedOutput()
-	log.Println("cmd Output :",out)
+	log.Println("cmd Output :", out)
 	printError("copying `main` binary failed with :", err)
 	log.Println("End: finished copying")
 
@@ -101,7 +105,7 @@ func main() {
 	log.Println("Start: Building tar")
 	cmd = exec.Command("tar", "-cf", tarFileName, "build_output")
 	out, err = cmd.CombinedOutput()
-	log.Println("cmd Output :",out)
+	log.Println("cmd Output :", out)
 	printError("Building tar failed with :", err)
 	log.Println("End: Building tar")
 
@@ -109,11 +113,11 @@ func main() {
 	log.Println("Start: Copy to " + finalDest)
 	cmd = exec.Command("cp", tarFileName, finalDest)
 	out, err = cmd.CombinedOutput()
-	log.Println("cmd Output :",out)
+	log.Println("cmd Output :", out)
 	printError("copy to final destination("+finalDest+") failed with :", err)
 	log.Println("End: Copy to " + finalDest)
 
-	log.Println("Build Completed. Binaries copied to " + finalDest + "/"+tarFileName)
+	log.Println("Build Completed. Binaries copied to " + finalDest + "/" + tarFileName)
 }
 
 func printError(message string, err error) {
@@ -123,8 +127,8 @@ func printError(message string, err error) {
 }
 
 func cleanUp(goPath string) {
-	log.Println("Start: removing "+ goPath +" dir.")
+	log.Println("Start: removing " + goPath + " dir.")
 	err := os.RemoveAll(goPath)
 	printError("Error cleaning up  Directory \""+goPath+"\"", err)
-	log.Println("End: removing "+ goPath +" dir.")
+	log.Println("End: removing " + goPath + " dir.")
 }

@@ -1,6 +1,8 @@
 package dbconnect
 
 import (
+	"UrlShortnerGoLang/internal_pkg/configfilereader"
+	"strings"
 	"testing"
 
 	"fmt"
@@ -10,10 +12,11 @@ import (
 
 // Test for dbConnect package.
 
-var mongoAddr = "mongodb://root:123@172.17.0.2"
+var conf configfilereader.Configuration
 
 func TestInsertLookUpEntry(t *testing.T) {
-	db := Connect(mongoAddr)
+	setupServer(t)
+	db := Connect(conf.MongoDBConnString)
 	var c LookUpDocument
 	c.FullURL = "https:/www.github.com"
 	c.ShortURLEndPoint = "/gh"
@@ -36,7 +39,8 @@ func TestInsertLookUpEntry(t *testing.T) {
 }
 
 func TestGetLookUpEntry(t *testing.T) {
-	db := Connect(mongoAddr)
+	setupServer(t)
+	db := Connect(conf.MongoDBConnString)
 	var c LookUpDocument
 	c.FullURL = "https:/www.github.com"
 	c.ShortURLEndPoint = "/gh"
@@ -55,16 +59,18 @@ func TestGetLookUpEntry(t *testing.T) {
 }
 
 func TestWrongGetLookUpEntry(t *testing.T) {
-	db := Connect(mongoAddr)
+	setupServer(t)
+	db := Connect(conf.MongoDBConnString)
 	_, err := GetLookUpEntry("/gh", db)
-	if err.Error() != "not found" {
-		t.Errorf(err.Error())
+	if strings.Compare(err.Error(), "not found") != 0 {
+		t.Error(err)
 	}
 	Disconnect(db)
 }
 
 func TestIsShortURLAlreadyPresent(t *testing.T) {
-	db := Connect(mongoAddr)
+	setupServer(t)
+	db := Connect(conf.MongoDBConnString)
 	var c LookUpDocument
 	c.FullURL = "https:/www.github.com"
 	c.ShortURLEndPoint = "/gh"
@@ -83,10 +89,19 @@ func TestIsShortURLAlreadyPresent(t *testing.T) {
 }
 
 func TestIsShortURLUnique(t *testing.T) {
-	db := Connect(mongoAddr)
+	setupServer(t)
+	db := Connect(conf.MongoDBConnString)
 	res := IsShortURLAlreadyPresent("/hgfkjdh", db)
 	if res != false {
 		t.Errorf("IsShortURLAlreadyPresent retuned false expected true")
 	}
 	Disconnect(db)
+}
+
+func setupServer(t *testing.T) {
+	configfilereader.ConfigFilePath = "./Config.test.json"
+	err := configfilereader.ReadConfig(&conf)
+	if err != nil {
+		t.Error("Error reading config file Config.test.json")
+	}
 }

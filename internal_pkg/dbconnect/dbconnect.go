@@ -21,12 +21,19 @@ type LookUpDocument struct {
 	ShortURLEndPoint string `json:"ShortURLEndPoint" bson:"ShortURLEndPoint"`
 }
 
+/*RequestBody struct to hold the Post request Body*/
+type RequestBody struct {
+	URL string `json:"URL" bson:"URL"`
+}
+
 /*Connect Connects to a monog db running at uri */
 func Connect(uri string) *mgo.Session {
+	if uri == "" {
+		log.Fatalln("Error empty Connection String to mongo Db servers")
+	}
 	db, err := mgo.Dial(uri)
 	if err != nil {
-		log.Println("cannot dial mongo", err)
-		return nil
+		log.Fatalln("cannot dial mongo:", uri, "\n with error:", err)
 	}
 
 	return db
@@ -52,9 +59,6 @@ Since this is not for  production i have ommited this part. */
 func GetLookUpEntry(shortURL string, db *mgo.Session) (LookUpDocument, error) {
 	var entry LookUpDocument
 	err := db.DB(DbName).C(CollectionName).Find(bson.M{"ShortURLEndPoint": shortURL}).One(&entry)
-	if err != nil {
-		log.Println(err)
-	}
 	return entry, err
 }
 

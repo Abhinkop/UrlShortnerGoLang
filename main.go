@@ -7,17 +7,25 @@ import (
 	"log"
 	"net/http"
 
+	"UrlShortnerGoLang/internal_pkg/configfilereader"
 	"UrlShortnerGoLang/internal_pkg/dbconnect"
 	"UrlShortnerGoLang/internal_pkg/randomstringgen"
 
 	"github.com/gorilla/mux"
 )
 
-var mongoAddr = "mongodb://root:123@172.17.0.2"
+var config configfilereader.Configuration
 
 func main() {
+	// Reading the Configuration from Config.json file.
+	err := configfilereader.ReadConfig(&config)
+	if err != nil {
+		log.Println("Error reading config file:", err)
+		log.Println("Using defaults ", config)
+	}
+
 	var router = mux.NewRouter()
-	router.HandleFunc("/api/shortenURL", shortenURLapi).Methods("GET")
+	router.HandleFunc("/api/shortenURL", shortenURLapi).Methods("POST")
 	router.HandleFunc("/images/favicon.ico", faviconHandler)
 	router.HandleFunc("/shortenURL", shortenURLHandler)
 
@@ -27,8 +35,10 @@ func main() {
 	// Handle index Page
 	router.HandleFunc("/", indexHandler)
 
-	fmt.Println("Running server!")
-	log.Fatal(http.ListenAndServe(":3000", router))
+	urlTemplate := "%s:%d"
+	url := fmt.Sprintf(urlTemplate, config.HOST, config.PORT)
+	log.Println("Server running at: \"", url, "\"")
+	log.Fatal(http.ListenAndServe(url, router))
 }
 
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +68,7 @@ func displayError(w *http.ResponseWriter, e error) {
 }
 
 func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
-	session := dbconnect.Connect(mongoAddr)
+	session := dbconnect.Connect(config.MongoDBConnString)
 	defer dbconnect.Disconnect(session)
 	// Create a entry to insert to db
 	var entry dbconnect.LookUpDocument
@@ -89,7 +99,7 @@ func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 
 func shortURLHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	session := dbconnect.Connect(mongoAddr)
+	session := dbconnect.Connect(config.MongoDBConnString)
 	entry, err := dbconnect.GetLookUpEntry(vars["shortURL"], session)
 	dbconnect.Disconnect(session)
 	// serve endpoint not found
@@ -112,13 +122,19 @@ func shortURLHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func shortenURLapi(w http.ResponseWriter, r *http.Request) {
-	session := dbconnect.Connect(mongoAddr)
+	session := dbconnect.Connect(config.MongoDBConnString)
 	defer dbconnect.Disconnect(session)
 	defer handleErrorAPI(&w)
+	decoder := json.NewDecoder(r.Body)
+	var req dbconnect.RequestBody
+	err := decoder.Decode(&req)
+	if err != nil {
+		panic(err)
+	}
 	var entry dbconnect.LookUpDocument
-	entry.FullURL = r.FormValue("URL")
+	entry.FullURL = req.URL
 	entry.ShortURLEndPoint = randomstringgen.Genarate(6, session)
-	err := dbconnect.InsertLookUpEntry(&entry, session)
+	err = dbconnect.InsertLookUpEntry(&entry, session)
 	if err != nil {
 		panic(err)
 	}
